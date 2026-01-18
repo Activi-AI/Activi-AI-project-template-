@@ -219,23 +219,36 @@ jobs:
   test:
     name: "Lint & Test"
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('package.json') != '' }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check if Node.js project
+        id: check
+        run: |
+          if [ -f "package.json" ]; then
+            echo "is_node=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_node=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Kein package.json gefunden - überspringe Node.js Tests"
+          fi
+
       - name: Setup Node.js
+        if: steps.check.outputs.is_node == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
+        if: steps.check.outputs.is_node == 'true'
         run: npm ci
 
       - name: Lint
+        if: steps.check.outputs.is_node == 'true'
         run: npm run lint --if-present
 
       - name: Test
+        if: steps.check.outputs.is_node == 'true'
         run: npm test --if-present
 
   # ═══════════════════════════════════════════════════════════════
