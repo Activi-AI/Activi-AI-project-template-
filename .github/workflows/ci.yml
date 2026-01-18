@@ -219,7 +219,7 @@ jobs:
   test:
     name: "Lint & Test"
     runs-on: ubuntu-latest
-    if: hashFiles('package.json') != ''
+    if: ${{ hashFiles('package.json') != '' }}
     steps:
       - uses: actions/checkout@v4
 
