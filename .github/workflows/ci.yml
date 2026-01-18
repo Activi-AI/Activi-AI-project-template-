@@ -33,6 +33,7 @@ jobs:
             "docs/PROJECT_BRIEF.md"
             "docs/TEST_PLAN.md"
             "ops/POLICY.md"
+            "guides/README.md"
             ".gitignore"
           )
 
@@ -277,6 +278,43 @@ jobs:
           fi
 
   # ═══════════════════════════════════════════════════════════════
+  # User Guide Check (nur bei PR zu main)
+  # ═══════════════════════════════════════════════════════════════
+  user-guide:
+    name: "Check User Guide"
+    runs-on: ubuntu-latest
+    if: github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate User Guide exists
+        run: |
+          echo "🔍 Prüfe Benutzeranleitung (PR zu main)..."
+
+          # Pflicht: QUICK_START.md muss existieren
+          if [ ! -f "guides/QUICK_START.md" ]; then
+            echo "❌ guides/QUICK_START.md nicht gefunden!"
+            echo ""
+            echo "   Vor Deploy MUSS eine Benutzeranleitung existieren."
+            echo "   Erstelle: guides/QUICK_START.md"
+            echo "   Vorlage: guides/TEMPLATE_GUIDE.md"
+            exit 1
+          fi
+
+          echo "✅ guides/QUICK_START.md vorhanden"
+
+          # Prüfe ob es mehr als nur Template-Platzhalter enthält
+          if grep -q "\[Feature-Name\]\|\[Erster Schritt\]\|screenshot_beispiel.png" guides/QUICK_START.md; then
+            echo "⚠️ QUICK_START.md enthält noch Platzhalter!"
+            echo "   Bitte alle [Platzhalter] ersetzen und echte Screenshots einfügen."
+            # Warnung, aber kein Block
+          fi
+
+          # Zähle Guide-Dateien
+          guide_count=$(find guides -name "*.md" -not -name "README.md" -not -name "TEMPLATE_GUIDE.md" | wc -l | tr -d ' ')
+          echo "📚 $guide_count Benutzeranleitung(en) gefunden"
+
+  # ═══════════════════════════════════════════════════════════════
   # Gate (alle Checks müssen grün sein)
   # ═══════════════════════════════════════════════════════════════
   gate:
@@ -294,7 +332,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════════
   production-gate:
     name: "Production Gate"
-    needs: [gate, production-checklist]
+    needs: [gate, production-checklist, user-guide]
     runs-on: ubuntu-latest
     if: github.base_ref == 'main'
     steps:
